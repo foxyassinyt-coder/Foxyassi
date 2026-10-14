@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>بطولة بث مباشر حقيقي</title>
+  <title>بطولة بث مباشر تلقائي</title>
   
   <!-- Canvas Confetti -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <!-- PeerJS library for Live Direct Streaming -->
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <!-- Firebase Database & App -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <style>
     * {
@@ -32,7 +33,7 @@
       padding: 10px 5px 25px 5px;
     }
 
-    /* Winner Banner */
+    /* Winner Banner at Top */
     #winner-banner {
       display: none;
       width: 100%;
@@ -59,7 +60,7 @@
       object-fit: cover; margin: 4px auto 0 auto; display: block;
     }
 
-    /* Bracket Container */
+    /* Bracket Container - Matching Original Design */
     .bracket-container {
       width: 100%;
       max-width: 420px;
@@ -107,7 +108,7 @@
       display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 13px; color: #222;
     }
 
-    /* Plus Button */
+    /* Bottom Plus Button */
     .plus-btn-container { margin-bottom: 10px; }
     .plus-btn {
       width: 68px; height: 68px; border-radius: 50%; background-color: #0d2bb5;
@@ -116,12 +117,12 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.25);
     }
 
-    /* Status Badge */
+    /* Connection Status Badge */
     .status-badge {
-      font-size: 12px; padding: 4px 10px; border-radius: 20px; background: #eee; color: #555;
-      margin-bottom: 5px; font-weight: bold;
+      font-size: 12px; padding: 4px 12px; border-radius: 20px; background: #e0e0e0; color: #555;
+      margin-bottom: 5px; font-weight: bold; transition: all 0.3s ease;
     }
-    .status-badge.online { background: #d4edda; color: #155724; }
+    .status-badge.online { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
 
     /* Modal */
     .modal-overlay {
@@ -135,16 +136,6 @@
     .modal-header {
       display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
       border-bottom: 1px solid #eee; padding-bottom: 10px; font-weight: bold;
-    }
-
-    .live-box {
-      background: #f0f4ff; border: 1px solid #b3c5ff; padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: center;
-    }
-    .live-box input {
-      width: 60%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; text-align: center; font-size: 16px; margin-left: 5px;
-    }
-    .live-box button {
-      padding: 8px 12px; background: #0d2bb5; color: white; border: none; border-radius: 6px; cursor: pointer;
     }
 
     .players-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
@@ -166,8 +157,8 @@
 </head>
 <body>
 
-  <!-- Status Indicator -->
-  <div id="status" class="status-badge">بث عادي (غير متصل)</div>
+  <!-- Live Status Bar -->
+  <div id="status" class="status-badge">جاري الاتصال بالسحابة المباشرة...</div>
 
   <!-- Winner Banner -->
   <div id="winner-banner">
@@ -175,7 +166,7 @@
     <img id="winner-img" class="winner-avatar" src="" alt="Winner">
   </div>
 
-  <!-- Tournament Tree -->
+  <!-- Tournament Bracket Tree -->
   <div class="bracket-container">
     <div class="side">
       <div class="pair">
@@ -220,22 +211,12 @@
     <div class="plus-btn" onclick="openModal()">+</div>
   </div>
 
-  <!-- Modal -->
+  <!-- Modal Uploader -->
   <div class="modal-overlay" id="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <span>إعدادات البث المباشر واللاعبين</span>
+        <span>تغيير صور اللاعبين (تزامن حقيقي متبادل)</span>
         <button style="background:none;border:none;font-size:20px;" onclick="closeModal()">&times;</button>
-      </div>
-
-      <!-- Live Sync Controls -->
-      <div class="live-box">
-        <p style="font-size:13px; margin-bottom:8px; font-weight:bold;">توصيل البث المباشر بين الهواتف 🔴</p>
-        <button onclick="startHost()" style="width:100%; margin-bottom:8px; background:#28a745;">إنشاء غرفة بث من هذا الهاتف</button>
-        <div style="display:flex; justify-content:center; align-items:center;">
-          <input type="text" id="room-input" placeholder="أدخل رمز الغرفة">
-          <button onclick="joinRoom()">انضمام</button>
-        </div>
       </div>
 
       <div class="players-list" id="upload-grid"></div>
@@ -244,6 +225,13 @@
   </div>
 
   <script>
+    // Initialize Realtime Public Database
+    const firebaseConfig = {
+      databaseURL: "https://fox-tournament-default-rtdb.firebaseio.com/"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const dbRef = firebase.database().ref("live_tournament_state");
+
     let state = {
       players: Array(8).fill(null),
       semis: Array(4).fill(null),
@@ -251,8 +239,25 @@
       winner: null
     };
 
-    let peer = null;
-    let connections = [];
+    // Auto Listening for Live Changes on ALL Connected Devices
+    dbRef.on("value", (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        state = {
+          players: data.players || Array(8).fill(null),
+          semis: data.semis || Array(4).fill(null),
+          finals: data.finals || Array(2).fill(null),
+          winner: data.winner || null
+        };
+      }
+      document.getElementById('status').innerText = '🔴 متصل - بث مباشر متبادل تلقائي';
+      document.getElementById('status').classList.add('online');
+      render();
+    });
+
+    function saveToCloud() {
+      dbRef.set(state);
+    }
 
     function render() {
       for (let i = 0; i < 8; i++) {
@@ -293,74 +298,25 @@
       }
     }
 
-    function broadcastState() {
-      render();
-      connections.forEach(conn => {
-        if (conn && conn.open) {
-          conn.send(state);
-        }
-      });
-    }
-
-    // Live Host Creator
-    function startHost() {
-      const roomId = Math.floor(1000 + Math.random() * 9000).toString();
-      peer = new Peer('tourney-' + roomId);
-
-      peer.on('open', (id) => {
-        document.getElementById('status').innerText = '🔴 مباشر - رمز الغرفة: ' + roomId;
-        document.getElementById('status').classList.add('online');
-        alert('تم إنشاء الغرفة! رمز الغرفة هو: ' + roomId + '\nاكتب هذا الرمز في الهاتف الآخر للانضمام.');
-      });
-
-      peer.on('connection', (conn) => {
-        connections.push(conn);
-        conn.on('open', () => {
-          conn.send(state);
-        });
-      });
-    }
-
-    // Join Live Host
-    function joinRoom() {
-      const code = document.getElementById('room-input').value.trim();
-      if (!code) return alert('يرجى إدخال رمز الغرفة');
-
-      peer = new Peer();
-      peer.on('open', () => {
-        const conn = peer.connect('tourney-' + code);
-        conn.on('open', () => {
-          document.getElementById('status').innerText = '🟢 متصل بالبث المباشر (غرفة ' + code + ')';
-          document.getElementById('status').classList.add('online');
-          closeModal();
-        });
-        conn.on('data', (newState) => {
-          state = newState;
-          render();
-          if (state.winner && typeof confetti === 'function') {
-            confetti({ particleCount: 80, spread: 70, origin: { y: 0.2 } });
-          }
-        });
-      });
-    }
-
     function advance(pIdx, sIdx) {
       if (!state.players[pIdx]) return;
       state.semis[sIdx] = state.players[pIdx];
-      broadcastState();
+      saveToCloud();
     }
 
     function advanceSemi(sIdx, fIdx) {
       if (!state.semis[sIdx]) return;
       state.finals[fIdx] = state.semis[sIdx];
-      broadcastState();
+      saveToCloud();
     }
 
     function setWinner(fIdx) {
       if (!state.finals[fIdx]) return;
       state.winner = state.finals[fIdx];
-      broadcastState();
-      if (typeof confetti === 'function') confetti({ particleCount: 80, spread: 70, origin: { y: 0.2 } });
+      saveToCloud();
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 80, spread: 70, origin: { y: 0.2 } });
+      }
     }
 
     function uploadImage(index, event) {
@@ -377,7 +333,7 @@
           canvas.height = 90;
           ctx.drawImage(img, 0, 0, 90, 90);
           state.players[index] = canvas.toDataURL('image/jpeg', 0.5);
-          broadcastState();
+          saveToCloud();
         };
       };
       reader.readAsDataURL(file);
@@ -385,14 +341,12 @@
 
     function resetTournament() {
       state = { players: Array(8).fill(null), semis: Array(4).fill(null), finals: Array(2).fill(null), winner: null };
-      broadcastState();
+      saveToCloud();
       closeModal();
     }
 
     function openModal() { document.getElementById('modal').style.display = 'flex'; }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
-
-    render();
   </script>
 </body>
 </html>
