@@ -1,409 +1,566 @@
-```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>بطولة 8 لاعبين</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Canvas Confetti for Celebration -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>بطولة 8 لاعبين - تزامن حي</title>
+  
+  <!-- Canvas Confetti for Winner Celebration -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-    <style>
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
 
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: #ffffff;
-            overflow: hidden;
-            user-select: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between; /* Top bracket, Bottom plus button */
-            align-items: center;
-        }
+    body {
+      background-color: #ffffff;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 5px 25px 5px;
+    }
 
-        /* Top Container to stick strictly at top */
-        .top-container {
-            width: 100%;
-            max-width: 440px;
-            padding-top: 10px;
-            padding-left: 8px;
-            padding-right: 8px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+    /* Winner Banner at Very Top */
+    #winner-banner {
+      display: none;
+      width: 100%;
+      max-width: 400px;
+      background: linear-gradient(135deg, #ffe57f, #ffc107);
+      border: 2px solid #b78103;
+      border-radius: 12px;
+      padding: 6px 12px;
+      margin-bottom: 6px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      animation: bannerSlide 0.4s ease-out;
+      z-index: 10;
+    }
 
-        /* Bracket Box Styling */
-        .box-bracket {
-            border: 2px solid #000000;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-            background-size: cover;
-            background-position: center;
-            transition: transform 0.1s ease, filter 0.1s ease;
-        }
+    @keyframes bannerSlide {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
 
-        .box-bracket:active {
-            transform: scale(0.95);
-            filter: brightness(1.1);
-        }
+    #winner-banner .crown {
+      font-size: 20px;
+      line-height: 1;
+    }
 
-        /* Colors matching the uploaded image */
-        .bg-dark-red {
-            background-color: #990000;
-        }
+    #winner-banner .winner-name {
+      font-weight: bold;
+      color: #332a00;
+      font-size: 14px;
+    }
 
-        .bg-light-red {
-            background-color: #e57373;
-        }
+    #winner-banner .winner-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      object-fit: cover;
+      margin: 4px auto 0 auto;
+      display: block;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
 
-        .bg-gray-center {
-            background-color: #808080;
-        }
+    /* Tournament Bracket - Exact Image Layout */
+    .bracket-container {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 5px;
+    }
 
-        .bg-light-green {
-            background-color: #81c784;
-        }
+    .side {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
 
-        .bg-dark-green {
-            background-color: #006600;
-        }
+    .pair {
+      display: flex;
+      flex-direction: column;
+      border: 2px solid #000;
+    }
 
-        .player-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
+    /* Round 1 Slots */
+    .slot-r1 {
+      width: 82px;
+      height: 44px;
+      background-color: #8b0000; /* Red left side */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
 
-        /* Plus Button at bottom center */
-        .plus-btn-container {
-            width: 72px;
-            height: 72px;
-            background-color: #0b22b8;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 0 3px #81c784, 0 4px 10px rgba(0,0,0,0.15);
-            cursor: pointer;
-            transition: transform 0.15s ease;
-            margin-bottom: 28px;
-        }
+    .slot-r1.green {
+      background-color: #006400; /* Dark Green right side */
+    }
 
-        .plus-btn-container:active {
-            transform: scale(0.92);
-        }
+    .slot-r1:first-child {
+      border-bottom: 2px solid #000;
+    }
 
-        .crown-icon {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            color: #fbbf24;
-            font-size: 13px;
-            filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.8));
-            z-index: 10;
-        }
+    /* Round 2 Slots (Semi-Finals) */
+    .semi-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      height: 200px;
+    }
 
-        /* Winner Top Celebration Banner Animation */
-        @keyframes slideDown {
-            from { transform: translateY(-100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
+    .slot-r2 {
+      width: 82px;
+      height: 44px;
+      background-color: #e57373; /* Light Pinkish Red */
+      border: 2px solid #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
 
-        .top-celebration-banner {
-            animation: slideDown 0.4s ease-out forwards;
-        }
-    </style>
+    .slot-r2.green {
+      background-color: #81c784; /* Light Green */
+    }
+
+    /* Round 3 Slots (Final - Center) */
+    .final-container {
+      display: flex;
+      flex-direction: column;
+      border: 2px solid #000;
+    }
+
+    .slot-r3 {
+      width: 82px;
+      height: 44px;
+      background-color: #808080; /* Gray */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slot-r3:first-child {
+      border-bottom: 2px solid #000;
+    }
+
+    /* Avatar Display inside Rectangles */
+    .avatar-wrapper {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    .avatar-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .placeholder-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.85);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      font-size: 13px;
+      color: #222;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+
+    /* Bottom Plus Button - Exact Matching Style */
+    .plus-btn-container {
+      margin-bottom: 10px;
+    }
+
+    .plus-btn {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background-color: #0d2bb5; /* Vibrant Blue */
+      border: 3px solid #66bb6a; /* Light Green Border */
+      color: #ffffff;
+      font-size: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+      transition: transform 0.15s ease, background-color 0.15s;
+    }
+
+    .plus-btn:active {
+      transform: scale(0.92);
+      background-color: #091f88;
+    }
+
+    /* Bottom Sheet Modal for Uploads */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0,0,0,0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: flex-end;
+    }
+
+    .modal-content {
+      width: 100%;
+      max-width: 480px;
+      background: #fff;
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      padding: 20px;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+      animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      color: #888;
+    }
+
+    .players-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .player-uploader {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f8f9fa;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .player-thumb {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #ccc;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .upload-btn-label {
+      font-size: 12px;
+      background: #0d2bb5;
+      color: white;
+      padding: 5px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      text-align: center;
+      flex-grow: 1;
+    }
+
+    .reset-btn {
+      width: 100%;
+      padding: 12px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    /* Hidden File Input */
+    input[type="file"] {
+      display: none;
+    }
+  </style>
 </head>
 <body>
 
-    <!-- TOP SECTION: BRACKET POSITIONED AT THE VERY TOP -->
-    <div class="top-container">
-        
-        <!-- CELEBRATION BANNER AT THE TOP -->
-        <div id="top-winner-banner" class="hidden w-full mb-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-white p-2 rounded-2xl shadow-lg border-2 border-amber-300 flex items-center justify-between px-3 top-celebration-banner">
-            <div class="flex items-center gap-2">
-                <i class="fa-solid fa-crown text-2xl text-yellow-100 animate-bounce"></i>
-                <div class="text-right">
-                    <span class="text-[10px] uppercase tracking-wider font-bold block text-yellow-100">بطل البطولة</span>
-                    <span class="text-xs font-black text-slate-900">مبروك الفوز بالمزاحمة!</span>
-                </div>
-            </div>
-            <div class="w-10 h-10 rounded-xl border-2 border-white overflow-hidden shadow">
-                <img id="winner-top-img" src="" class="w-full h-full object-cover">
-            </div>
-        </div>
+  <!-- Top Winner Banner -->
+  <div id="winner-banner">
+    <div class="crown">👑 البطل 👑</div>
+    <img id="winner-img" class="winner-avatar" src="" alt="Winner">
+  </div>
 
-        <!-- BRACKET GRID -->
-        <div class="w-full flex justify-between items-center h-[200px] relative">
-            
-            <!-- LEFT SIDE: RED BRACKET (Slots 1, 2, 3, 4) -->
-            <div class="flex items-center gap-1 h-full w-[43%]">
-                <!-- Quarters -->
-                <div class="flex flex-col justify-between h-full w-[52%]">
-                    <!-- Pair 1 -->
-                    <div class="flex flex-col h-[46%]">
-                        <div id="p0" onclick="advanceQuarter(0)" class="box-bracket bg-dark-red h-1/2"></div>
-                        <div id="p1" onclick="advanceQuarter(1)" class="box-bracket bg-dark-red h-1/2 -mt-[2px]"></div>
-                    </div>
-                    <!-- Pair 2 -->
-                    <div class="flex flex-col h-[46%]">
-                        <div id="p2" onclick="advanceQuarter(2)" class="box-bracket bg-dark-red h-1/2"></div>
-                        <div id="p3" onclick="advanceQuarter(3)" class="box-bracket bg-dark-red h-1/2 -mt-[2px]"></div>
-                    </div>
-                </div>
-
-                <!-- Semis -->
-                <div class="flex flex-col justify-between h-full w-[48%] py-[22px]">
-                    <div id="sf0" onclick="advanceSemi(0)" class="box-bracket bg-light-red h-[38px]"></div>
-                    <div id="sf1" onclick="advanceSemi(1)" class="box-bracket bg-light-red h-[38px]"></div>
-                </div>
-            </div>
-
-            <!-- CENTER: GREY FINALS -->
-            <div class="flex flex-col justify-center h-full w-[14%]">
-                <div class="flex flex-col h-[76px] w-full">
-                    <div id="f0" onclick="advanceFinal(0)" class="box-bracket bg-gray-center h-1/2"></div>
-                    <div id="f1" onclick="advanceFinal(1)" class="box-bracket bg-gray-center h-1/2 -mt-[2px]"></div>
-                </div>
-            </div>
-
-            <!-- RIGHT SIDE: GREEN BRACKET (Slots 5, 6, 7, 8) -->
-            <div class="flex items-center gap-1 h-full w-[43%]">
-                <!-- Semis -->
-                <div class="flex flex-col justify-between h-full w-[48%] py-[22px]">
-                    <div id="sf2" onclick="advanceSemi(2)" class="box-bracket bg-light-green h-[38px]"></div>
-                    <div id="sf3" onclick="advanceSemi(3)" class="box-bracket bg-light-green h-[38px]"></div>
-                </div>
-
-                <!-- Quarters -->
-                <div class="flex flex-col justify-between h-full w-[52%]">
-                    <!-- Pair 3 -->
-                    <div class="flex flex-col h-[46%]">
-                        <div id="p4" onclick="advanceQuarter(4)" class="box-bracket bg-dark-green h-1/2"></div>
-                        <div id="p5" onclick="advanceQuarter(5)" class="box-bracket bg-dark-green h-1/2 -mt-[2px]"></div>
-                    </div>
-                    <!-- Pair 4 -->
-                    <div class="flex flex-col h-[46%]">
-                        <div id="p6" onclick="advanceQuarter(6)" class="box-bracket bg-dark-green h-1/2"></div>
-                        <div id="p7" onclick="advanceQuarter(7)" class="box-bracket bg-dark-green h-1/2 -mt-[2px]"></div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
+  <!-- Tournament Bracket Tree -->
+  <div class="bracket-container">
+    
+    <!-- Left Side (Red Team) -->
+    <div class="side">
+      <div class="pair">
+        <div class="slot-r1" onclick="advance(0, 0)"><div class="avatar-wrapper" id="slot-0"></div></div>
+        <div class="slot-r1" onclick="advance(1, 0)"><div class="avatar-wrapper" id="slot-1"></div></div>
+      </div>
+      <div class="pair">
+        <div class="slot-r1" onclick="advance(2, 1)"><div class="avatar-wrapper" id="slot-2"></div></div>
+        <div class="slot-r1" onclick="advance(3, 1)"><div class="avatar-wrapper" id="slot-3"></div></div>
+      </div>
     </div>
 
-    <!-- BOTTOM SECTION: BLUE PLUS BUTTON -->
-    <div class="plus-btn-container" onclick="openModal()">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
+    <!-- Semi Final Left -->
+    <div class="semi-container">
+      <div class="slot-r2" onclick="advanceSemi(0, 0)"><div class="avatar-wrapper" id="semi-0"></div></div>
+      <div class="slot-r2" onclick="advanceSemi(1, 1)"><div class="avatar-wrapper" id="semi-1"></div></div>
     </div>
 
-    <!-- UPLOAD MODAL DIALOG -->
-    <div id="uploadModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-50 flex items-end justify-center">
-        <div class="bg-white w-full max-w-md rounded-t-3xl p-5 shadow-2xl border-t border-slate-200 flex flex-col gap-3 max-h-[85vh] overflow-y-auto">
-            
-            <div class="flex justify-between items-center border-b pb-3">
-                <h3 class="text-sm font-extrabold text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-image text-blue-600"></i>
-                    تعديل صور المتسابقين الـ 8
-                </h3>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1 text-lg">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <!-- Upload Slots Grid -->
-            <div class="grid grid-cols-2 gap-2 my-2">
-                <script>
-                    for(let i = 0; i < 8; i++) {
-                        const isRed = i < 4;
-                        document.write(`
-                            <div class="flex items-center gap-2 border p-2 rounded-xl ${isRed ? 'bg-red-50/60 border-red-200' : 'bg-green-50/60 border-green-200'}">
-                                <div class="w-10 h-10 rounded-lg overflow-hidden border border-slate-300 flex-shrink-0 bg-white">
-                                    <img id="modal-preview-${i}" class="w-full h-full object-cover" src="">
-                                </div>
-                                <div class="flex flex-col min-w-0 flex-grow">
-                                    <span class="text-[11px] font-bold text-slate-700">لاعب ${i + 1}</span>
-                                    <label class="mt-1 inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold bg-white border border-slate-300 rounded-md text-slate-700 active:bg-slate-100 cursor-pointer shadow-sm truncate">
-                                        تغيير الصورة
-                                        <input type="file" accept="image/*" onchange="uploadImage(event, ${i})" class="hidden">
-                                    </label>
-                                </div>
-                            </div>
-                        `);
-                    }
-                </script>
-            </div>
-
-            <div class="flex flex-col gap-2 pt-2 border-t">
-                <button onclick="closeModal()" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs active:bg-blue-700 shadow">
-                    حفظ وإغلاق
-                </button>
-                <button onclick="resetBracket()" class="w-full bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs active:bg-slate-200 border border-slate-300">
-                    إعادة بدء البطولة
-                </button>
-            </div>
-        </div>
+    <!-- Final (Center Gray) -->
+    <div class="final-container">
+      <div class="slot-r3" onclick="setWinner(0)"><div class="avatar-wrapper" id="final-0"></div></div>
+      <div class="slot-r3" onclick="setWinner(1)"><div class="avatar-wrapper" id="final-1"></div></div>
     </div>
 
-    <!-- LOGIC & INTERACTION -->
-    <script>
-        // Generate SVG Avatars matching exact slot numbers (1-8)
-        function createAvatarSVG(numberStr, bgColor) {
-            const svg = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
-                <rect width="100" height="100" fill="${bgColor}"/>
-                <circle cx="50" cy="38" r="20" fill="#ffffff" opacity="0.9"/>
-                <path d="M15,92 C15,68 32,60 50,60 C68,60 85,68 85,92 Z" fill="#ffffff" opacity="0.9"/>
-                <circle cx="50" cy="35" r="14" fill="${bgColor}"/>
-                <text x="50" y="40" font-family="Arial, sans-serif" font-size="14" font-weight="900" fill="#ffffff" text-anchor="middle">${numberStr}</text>
-            </svg>`;
-            return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
-        }
+    <!-- Semi Final Right -->
+    <div class="semi-container">
+      <div class="slot-r2 green" onclick="advanceSemi(2, 0)"><div class="avatar-wrapper" id="semi-2"></div></div>
+      <div class="slot-r2 green" onclick="advanceSemi(3, 1)"><div class="avatar-wrapper" id="semi-3"></div></div>
+    </div>
 
-        let quarterPlayers = [
-            createAvatarSVG("1", "#990000"),
-            createAvatarSVG("2", "#990000"),
-            createAvatarSVG("3", "#990000"),
-            createAvatarSVG("4", "#990000"),
-            createAvatarSVG("5", "#006600"),
-            createAvatarSVG("6", "#006600"),
-            createAvatarSVG("7", "#006600"),
-            createAvatarSVG("8", "#006600")
-        ];
+    <!-- Right Side (Green Team) -->
+    <div class="side">
+      <div class="pair">
+        <div class="slot-r1 green" onclick="advance(4, 2)"><div class="avatar-wrapper" id="slot-4"></div></div>
+        <div class="slot-r1 green" onclick="advance(5, 2)"><div class="avatar-wrapper" id="slot-5"></div></div>
+      </div>
+      <div class="pair">
+        <div class="slot-r1 green" onclick="advance(6, 3)"><div class="avatar-wrapper" id="slot-6"></div></div>
+        <div class="slot-r1 green" onclick="advance(7, 3)"><div class="avatar-wrapper" id="slot-7"></div></div>
+      </div>
+    </div>
 
-        let semiPlayers = [null, null, null, null];
-        let finalPlayers = [null, null];
-        let champion = null;
+  </div>
 
-        function render() {
-            // Quarters
-            for (let i = 0; i < 8; i++) {
-                setBoxContent(`p${i}`, quarterPlayers[i]);
-                const prev = document.getElementById(`modal-preview-${i}`);
-                if (prev) prev.src = quarterPlayers[i];
-            }
+  <!-- Plus (+) Button at Bottom -->
+  <div class="plus-btn-container">
+    <div class="plus-btn" onclick="openModal()">+</div>
+  </div>
 
-            // Semis
-            for (let i = 0; i < 4; i++) {
-                setBoxContent(`sf${i}`, semiPlayers[i]);
-            }
+  <!-- Bottom Sheet Modal -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="modal-title">تغيير صور اللاعبين (تزامن حي)</span>
+        <button class="close-btn" onclick="closeModal()">&times;</button>
+      </div>
 
-            // Finals
-            for (let i = 0; i < 2; i++) {
-                setBoxContent(`f${i}`, finalPlayers[i], champion && champion === finalPlayers[i]);
-            }
+      <div class="players-list" id="upload-grid">
+        <!-- Player Inputs dynamically inserted here -->
+      </div>
 
-            // Top Winner Banner Visibility
-            const topBanner = document.getElementById('top-winner-banner');
-            const winnerImg = document.getElementById('winner-top-img');
-            
-            if (champion) {
-                winnerImg.src = champion;
-                topBanner.classList.remove('hidden');
-            } else {
-                topBanner.classList.add('hidden');
-            }
-        }
+      <button class="reset-btn" onclick="resetTournament()">إعادة ضبط البطولة بالكامل</button>
+    </div>
+  </div>
 
-        function setBoxContent(id, imgSrc, isWinner = false) {
-            const el = document.getElementById(id);
-            if (!el) return;
-            if (imgSrc) {
-                el.innerHTML = `
-                    <img src="${imgSrc}" class="player-img">
-                    ${isWinner ? '<i class="fa-solid fa-crown crown-icon"></i>' : ''}
-                `;
-            } else {
-                el.innerHTML = '';
-            }
-        }
+  <!-- Firebase Integration -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        function advanceQuarter(idx) {
-            const semiTarget = Math.floor(idx / 2);
-            semiPlayers[semiTarget] = quarterPlayers[idx];
+    // Public Firebase Configuration for Sync
+    const firebaseConfig = {
+      databaseURL: "https://tournament-app-default-rtdb.firebaseio.com/"
+    };
 
-            if (semiTarget < 2) finalPlayers[0] = null;
-            else finalPlayers[1] = null;
-            champion = null;
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const tournamentRef = ref(db, 'active_tournament');
 
-            render();
-        }
+    // Initial State Structure
+    let state = {
+      players: Array(8).fill(null),
+      semis: Array(4).fill(null),
+      finals: Array(2).fill(null),
+      winner: null
+    };
 
-        function advanceSemi(idx) {
-            if (!semiPlayers[idx]) return;
-            const finalTarget = idx < 2 ? 0 : 1;
-            finalPlayers[finalTarget] = semiPlayers[idx];
-            champion = null;
+    // Firebase Listener for Realtime Sync Across All Devices
+    onValue(tournamentRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        state = data;
+        if (!state.players) state.players = Array(8).fill(null);
+        if (!state.semis) state.semis = Array(4).fill(null);
+        if (!state.finals) state.finals = Array(2).fill(null);
+      }
+      render();
+    });
 
-            render();
-        }
+    function updateCloud() {
+      set(tournamentRef, state);
+    }
 
-        function advanceFinal(idx) {
-            if (!finalPlayers[idx]) return;
-            champion = finalPlayers[idx];
-            render();
+    // Render Function to Sync DOM
+    function render() {
+      // Round 1
+      for (let i = 0; i < 8; i++) {
+        const el = document.getElementById(`slot-${i}`);
+        el.innerHTML = state.players[i] 
+          ? `<img src="${state.players[i]}">` 
+          : `<div class="placeholder-icon">${i + 1}</div>`;
+      }
 
-            // Trigger Confetti at the TOP of screen
-            if (typeof confetti === 'function') {
-                confetti({
-                    particleCount: 80,
-                    spread: 80,
-                    origin: { y: 0.15 } // Top of screen!
-                });
-            }
-        }
+      // Round 2 (Semis)
+      for (let i = 0; i < 4; i++) {
+        const el = document.getElementById(`semi-${i}`);
+        el.innerHTML = state.semis[i] ? `<img src="${state.semis[i]}">` : '';
+      }
 
-        function uploadImage(event, idx) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    quarterPlayers[idx] = e.target.result;
-                    resetBracket(false);
-                };
-                reader.readAsDataURL(file);
-            }
-        }
+      // Round 3 (Finals)
+      for (let i = 0; i < 2; i++) {
+        const el = document.getElementById(`final-${i}`);
+        el.innerHTML = state.finals[i] ? `<img src="${state.finals[i]}">` : '';
+      }
 
-        function openModal() {
-            document.getElementById('uploadModal').classList.remove('hidden');
-        }
+      // Winner Banner
+      const banner = document.getElementById('winner-banner');
+      const winnerImg = document.getElementById('winner-img');
+      if (state.winner) {
+        banner.style.display = 'block';
+        winnerImg.src = state.winner;
+      } else {
+        banner.style.display = 'none';
+      }
 
-        function closeModal() {
-            document.getElementById('uploadModal').classList.add('hidden');
-        }
+      // Render Modal Uploader Grid
+      const grid = document.getElementById('upload-grid');
+      grid.innerHTML = '';
+      for (let i = 0; i < 8; i++) {
+        const thumb = state.players[i] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="%23ccc"><circle cx="12" cy="12" r="10"/></svg>';
+        grid.innerHTML += `
+          <div class="player-uploader">
+            <img class="player-thumb" src="${thumb}">
+            <label class="upload-btn-label">
+              لاعب ${i + 1}
+              <input type="file" accept="image/*" onchange="uploadImage(${i}, event)">
+            </label>
+          </div>
+        `;
+      }
+    }
 
-        function resetBracket(close = true) {
-            semiPlayers = [null, null, null, null];
-            finalPlayers = [null, null];
-            champion = null;
-            render();
-            if (close) closeModal();
-        }
+    // Actions
+    window.advance = function(playerIdx, semiTargetIdx) {
+      if (!state.players[playerIdx]) return;
+      state.semis[semiTargetIdx] = state.players[playerIdx];
+      updateCloud();
+    };
 
-        window.onload = render;
-    </script>
+    window.advanceSemi = function(semiIdx, finalTargetIdx) {
+      if (!state.semis[semiIdx]) return;
+      state.finals[finalTargetIdx] = state.semis[semiIdx];
+      updateCloud();
+    };
+
+    window.setWinner = function(finalIdx) {
+      if (!state.finals[finalIdx]) return;
+      state.winner = state.finals[finalIdx];
+      updateCloud();
+
+      // Trigger Confetti
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.2 }
+        });
+      }
+    };
+
+    window.uploadImage = function(index, event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        // Compress image before saving to database
+        const img = new Image();
+        img.src = e.target.result;
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = 150;
+          canvas.height = 150;
+          ctx.drawImage(img, 0, 0, 150, 150);
+          state.players[index] = canvas.toDataURL('image/jpeg', 0.7);
+          updateCloud();
+        };
+      };
+      reader.readAsDataURL(file);
+    };
+
+    window.resetTournament = function() {
+      state = {
+        players: Array(8).fill(null),
+        semis: Array(4).fill(null),
+        finals: Array(2).fill(null),
+        winner: null
+      };
+      updateCloud();
+      closeModal();
+    };
+
+    window.openModal = function() {
+      document.getElementById('modal').style.display = 'flex';
+    };
+
+    window.closeModal = function() {
+      document.getElementById('modal').style.display = 'none';
+    };
+  </script>
 </body>
 </html>
-```
