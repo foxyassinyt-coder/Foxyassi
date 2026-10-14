@@ -1,0 +1,409 @@
+```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>بطولة 8 لاعبين</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti for Celebration -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #ffffff;
+            overflow: hidden;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* Top bracket, Bottom plus button */
+            align-items: center;
+        }
+
+        /* Top Container to stick strictly at top */
+        .top-container {
+            width: 100%;
+            max-width: 440px;
+            padding-top: 10px;
+            padding-left: 8px;
+            padding-right: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Bracket Box Styling */
+        .box-bracket {
+            border: 2px solid #000000;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+            transition: transform 0.1s ease, filter 0.1s ease;
+        }
+
+        .box-bracket:active {
+            transform: scale(0.95);
+            filter: brightness(1.1);
+        }
+
+        /* Colors matching the uploaded image */
+        .bg-dark-red {
+            background-color: #990000;
+        }
+
+        .bg-light-red {
+            background-color: #e57373;
+        }
+
+        .bg-gray-center {
+            background-color: #808080;
+        }
+
+        .bg-light-green {
+            background-color: #81c784;
+        }
+
+        .bg-dark-green {
+            background-color: #006600;
+        }
+
+        .player-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Plus Button at bottom center */
+        .plus-btn-container {
+            width: 72px;
+            height: 72px;
+            background-color: #0b22b8;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 0 3px #81c784, 0 4px 10px rgba(0,0,0,0.15);
+            cursor: pointer;
+            transition: transform 0.15s ease;
+            margin-bottom: 28px;
+        }
+
+        .plus-btn-container:active {
+            transform: scale(0.92);
+        }
+
+        .crown-icon {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            color: #fbbf24;
+            font-size: 13px;
+            filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.8));
+            z-index: 10;
+        }
+
+        /* Winner Top Celebration Banner Animation */
+        @keyframes slideDown {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .top-celebration-banner {
+            animation: slideDown 0.4s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOP SECTION: BRACKET POSITIONED AT THE VERY TOP -->
+    <div class="top-container">
+        
+        <!-- CELEBRATION BANNER AT THE TOP -->
+        <div id="top-winner-banner" class="hidden w-full mb-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-white p-2 rounded-2xl shadow-lg border-2 border-amber-300 flex items-center justify-between px-3 top-celebration-banner">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-crown text-2xl text-yellow-100 animate-bounce"></i>
+                <div class="text-right">
+                    <span class="text-[10px] uppercase tracking-wider font-bold block text-yellow-100">بطل البطولة</span>
+                    <span class="text-xs font-black text-slate-900">مبروك الفوز بالمزاحمة!</span>
+                </div>
+            </div>
+            <div class="w-10 h-10 rounded-xl border-2 border-white overflow-hidden shadow">
+                <img id="winner-top-img" src="" class="w-full h-full object-cover">
+            </div>
+        </div>
+
+        <!-- BRACKET GRID -->
+        <div class="w-full flex justify-between items-center h-[200px] relative">
+            
+            <!-- LEFT SIDE: RED BRACKET (Slots 1, 2, 3, 4) -->
+            <div class="flex items-center gap-1 h-full w-[43%]">
+                <!-- Quarters -->
+                <div class="flex flex-col justify-between h-full w-[52%]">
+                    <!-- Pair 1 -->
+                    <div class="flex flex-col h-[46%]">
+                        <div id="p0" onclick="advanceQuarter(0)" class="box-bracket bg-dark-red h-1/2"></div>
+                        <div id="p1" onclick="advanceQuarter(1)" class="box-bracket bg-dark-red h-1/2 -mt-[2px]"></div>
+                    </div>
+                    <!-- Pair 2 -->
+                    <div class="flex flex-col h-[46%]">
+                        <div id="p2" onclick="advanceQuarter(2)" class="box-bracket bg-dark-red h-1/2"></div>
+                        <div id="p3" onclick="advanceQuarter(3)" class="box-bracket bg-dark-red h-1/2 -mt-[2px]"></div>
+                    </div>
+                </div>
+
+                <!-- Semis -->
+                <div class="flex flex-col justify-between h-full w-[48%] py-[22px]">
+                    <div id="sf0" onclick="advanceSemi(0)" class="box-bracket bg-light-red h-[38px]"></div>
+                    <div id="sf1" onclick="advanceSemi(1)" class="box-bracket bg-light-red h-[38px]"></div>
+                </div>
+            </div>
+
+            <!-- CENTER: GREY FINALS -->
+            <div class="flex flex-col justify-center h-full w-[14%]">
+                <div class="flex flex-col h-[76px] w-full">
+                    <div id="f0" onclick="advanceFinal(0)" class="box-bracket bg-gray-center h-1/2"></div>
+                    <div id="f1" onclick="advanceFinal(1)" class="box-bracket bg-gray-center h-1/2 -mt-[2px]"></div>
+                </div>
+            </div>
+
+            <!-- RIGHT SIDE: GREEN BRACKET (Slots 5, 6, 7, 8) -->
+            <div class="flex items-center gap-1 h-full w-[43%]">
+                <!-- Semis -->
+                <div class="flex flex-col justify-between h-full w-[48%] py-[22px]">
+                    <div id="sf2" onclick="advanceSemi(2)" class="box-bracket bg-light-green h-[38px]"></div>
+                    <div id="sf3" onclick="advanceSemi(3)" class="box-bracket bg-light-green h-[38px]"></div>
+                </div>
+
+                <!-- Quarters -->
+                <div class="flex flex-col justify-between h-full w-[52%]">
+                    <!-- Pair 3 -->
+                    <div class="flex flex-col h-[46%]">
+                        <div id="p4" onclick="advanceQuarter(4)" class="box-bracket bg-dark-green h-1/2"></div>
+                        <div id="p5" onclick="advanceQuarter(5)" class="box-bracket bg-dark-green h-1/2 -mt-[2px]"></div>
+                    </div>
+                    <!-- Pair 4 -->
+                    <div class="flex flex-col h-[46%]">
+                        <div id="p6" onclick="advanceQuarter(6)" class="box-bracket bg-dark-green h-1/2"></div>
+                        <div id="p7" onclick="advanceQuarter(7)" class="box-bracket bg-dark-green h-1/2 -mt-[2px]"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- BOTTOM SECTION: BLUE PLUS BUTTON -->
+    <div class="plus-btn-container" onclick="openModal()">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+    </div>
+
+    <!-- UPLOAD MODAL DIALOG -->
+    <div id="uploadModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-50 flex items-end justify-center">
+        <div class="bg-white w-full max-w-md rounded-t-3xl p-5 shadow-2xl border-t border-slate-200 flex flex-col gap-3 max-h-[85vh] overflow-y-auto">
+            
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-image text-blue-600"></i>
+                    تعديل صور المتسابقين الـ 8
+                </h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Upload Slots Grid -->
+            <div class="grid grid-cols-2 gap-2 my-2">
+                <script>
+                    for(let i = 0; i < 8; i++) {
+                        const isRed = i < 4;
+                        document.write(`
+                            <div class="flex items-center gap-2 border p-2 rounded-xl ${isRed ? 'bg-red-50/60 border-red-200' : 'bg-green-50/60 border-green-200'}">
+                                <div class="w-10 h-10 rounded-lg overflow-hidden border border-slate-300 flex-shrink-0 bg-white">
+                                    <img id="modal-preview-${i}" class="w-full h-full object-cover" src="">
+                                </div>
+                                <div class="flex flex-col min-w-0 flex-grow">
+                                    <span class="text-[11px] font-bold text-slate-700">لاعب ${i + 1}</span>
+                                    <label class="mt-1 inline-flex items-center justify-center px-2 py-1 text-[10px] font-bold bg-white border border-slate-300 rounded-md text-slate-700 active:bg-slate-100 cursor-pointer shadow-sm truncate">
+                                        تغيير الصورة
+                                        <input type="file" accept="image/*" onchange="uploadImage(event, ${i})" class="hidden">
+                                    </label>
+                                </div>
+                            </div>
+                        `);
+                    }
+                </script>
+            </div>
+
+            <div class="flex flex-col gap-2 pt-2 border-t">
+                <button onclick="closeModal()" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs active:bg-blue-700 shadow">
+                    حفظ وإغلاق
+                </button>
+                <button onclick="resetBracket()" class="w-full bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs active:bg-slate-200 border border-slate-300">
+                    إعادة بدء البطولة
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIC & INTERACTION -->
+    <script>
+        // Generate SVG Avatars matching exact slot numbers (1-8)
+        function createAvatarSVG(numberStr, bgColor) {
+            const svg = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+                <rect width="100" height="100" fill="${bgColor}"/>
+                <circle cx="50" cy="38" r="20" fill="#ffffff" opacity="0.9"/>
+                <path d="M15,92 C15,68 32,60 50,60 C68,60 85,68 85,92 Z" fill="#ffffff" opacity="0.9"/>
+                <circle cx="50" cy="35" r="14" fill="${bgColor}"/>
+                <text x="50" y="40" font-family="Arial, sans-serif" font-size="14" font-weight="900" fill="#ffffff" text-anchor="middle">${numberStr}</text>
+            </svg>`;
+            return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+        }
+
+        let quarterPlayers = [
+            createAvatarSVG("1", "#990000"),
+            createAvatarSVG("2", "#990000"),
+            createAvatarSVG("3", "#990000"),
+            createAvatarSVG("4", "#990000"),
+            createAvatarSVG("5", "#006600"),
+            createAvatarSVG("6", "#006600"),
+            createAvatarSVG("7", "#006600"),
+            createAvatarSVG("8", "#006600")
+        ];
+
+        let semiPlayers = [null, null, null, null];
+        let finalPlayers = [null, null];
+        let champion = null;
+
+        function render() {
+            // Quarters
+            for (let i = 0; i < 8; i++) {
+                setBoxContent(`p${i}`, quarterPlayers[i]);
+                const prev = document.getElementById(`modal-preview-${i}`);
+                if (prev) prev.src = quarterPlayers[i];
+            }
+
+            // Semis
+            for (let i = 0; i < 4; i++) {
+                setBoxContent(`sf${i}`, semiPlayers[i]);
+            }
+
+            // Finals
+            for (let i = 0; i < 2; i++) {
+                setBoxContent(`f${i}`, finalPlayers[i], champion && champion === finalPlayers[i]);
+            }
+
+            // Top Winner Banner Visibility
+            const topBanner = document.getElementById('top-winner-banner');
+            const winnerImg = document.getElementById('winner-top-img');
+            
+            if (champion) {
+                winnerImg.src = champion;
+                topBanner.classList.remove('hidden');
+            } else {
+                topBanner.classList.add('hidden');
+            }
+        }
+
+        function setBoxContent(id, imgSrc, isWinner = false) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (imgSrc) {
+                el.innerHTML = `
+                    <img src="${imgSrc}" class="player-img">
+                    ${isWinner ? '<i class="fa-solid fa-crown crown-icon"></i>' : ''}
+                `;
+            } else {
+                el.innerHTML = '';
+            }
+        }
+
+        function advanceQuarter(idx) {
+            const semiTarget = Math.floor(idx / 2);
+            semiPlayers[semiTarget] = quarterPlayers[idx];
+
+            if (semiTarget < 2) finalPlayers[0] = null;
+            else finalPlayers[1] = null;
+            champion = null;
+
+            render();
+        }
+
+        function advanceSemi(idx) {
+            if (!semiPlayers[idx]) return;
+            const finalTarget = idx < 2 ? 0 : 1;
+            finalPlayers[finalTarget] = semiPlayers[idx];
+            champion = null;
+
+            render();
+        }
+
+        function advanceFinal(idx) {
+            if (!finalPlayers[idx]) return;
+            champion = finalPlayers[idx];
+            render();
+
+            // Trigger Confetti at the TOP of screen
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 80,
+                    spread: 80,
+                    origin: { y: 0.15 } // Top of screen!
+                });
+            }
+        }
+
+        function uploadImage(event, idx) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    quarterPlayers[idx] = e.target.result;
+                    resetBracket(false);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function openModal() {
+            document.getElementById('uploadModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('uploadModal').classList.add('hidden');
+        }
+
+        function resetBracket(close = true) {
+            semiPlayers = [null, null, null, null];
+            finalPlayers = [null, null];
+            champion = null;
+            render();
+            if (close) closeModal();
+        }
+
+        window.onload = render;
+    </script>
+</body>
+</html>
+```
