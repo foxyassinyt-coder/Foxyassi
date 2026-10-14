@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>بطولة بث مباشر مع حفظ دائم</title>
+  <title>بطولة البث المباشر - مسابقة التيك توك</title>
   
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <style>
     * {
@@ -37,7 +39,7 @@
       background: linear-gradient(135deg, #ffe57f, #ffc107);
       border: 2px solid #b78103;
       border-radius: 12px;
-      padding: 6px 12px;
+      padding: 6px;
       text-align: center;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       animation: bannerSlide 0.4s ease-out;
@@ -49,13 +51,15 @@
       to { transform: translateY(0); opacity: 1; }
     }
 
-    #winner-banner .crown { font-size: 20px; line-height: 1; }
     #winner-banner .winner-avatar {
       width: 42px; height: 42px; border-radius: 50%; border: 2px solid #fff;
       object-fit: cover; margin: 4px auto 0 auto; display: block;
     }
+    #winner-banner .winner-id {
+      font-size: 13px; font-weight: bold; color: #332a00; margin-top: 2px;
+    }
 
-    /* Bracket Container */
+    /* Bracket Tree Container */
     .bracket-container {
       width: 100%;
       max-width: 420px;
@@ -64,16 +68,17 @@
       align-items: center;
       margin-top: 2px;
       background: rgba(255, 255, 255, 0.95);
-      padding: 8px;
-      border-radius: 10px;
+      padding: 8px 4px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
     }
 
     .side { display: flex; flex-direction: column; gap: 16px; }
-    .pair { display: flex; flex-direction: column; border: 2px solid #000; }
+    .pair { display: flex; flex-direction: column; border: 2px solid #000; border-radius: 4px; overflow: hidden; }
 
     .slot-r1 {
-      width: 82px; height: 44px; background-color: #8b0000;
-      display: flex; justify-content: center; align-items: center;
+      width: 82px; height: 46px; background-color: #8b0000;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
       cursor: pointer; position: relative; overflow: hidden;
     }
     .slot-r1.green { background-color: #006400; }
@@ -84,38 +89,48 @@
     }
 
     .slot-r2 {
-      width: 82px; height: 44px; background-color: #e57373; border: 2px solid #000;
-      display: flex; justify-content: center; align-items: center; cursor: pointer;
-      position: relative; overflow: hidden;
+      width: 82px; height: 46px; background-color: #e57373; border: 2px solid #000;
+      border-radius: 4px; display: flex; flex-direction: column; justify-content: center;
+      align-items: center; cursor: pointer; position: relative; overflow: hidden;
     }
     .slot-r2.green { background-color: #81c784; }
 
-    .final-container { display: flex; flex-direction: column; border: 2px solid #000; }
+    .final-container { display: flex; flex-direction: column; border: 2px solid #000; border-radius: 4px; overflow: hidden; }
 
     .slot-r3 {
-      width: 82px; height: 44px; background-color: #808080;
-      display: flex; justify-content: center; align-items: center; cursor: pointer;
-      position: relative; overflow: hidden;
+      width: 82px; height: 46px; background-color: #808080;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      cursor: pointer; position: relative; overflow: hidden;
     }
     .slot-r3:first-child { border-bottom: 2px solid #000; }
 
-    .avatar-wrapper { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+    .avatar-wrapper {
+      width: 100%; height: 100%; display: flex; flex-direction: column;
+      justify-content: center; align-items: center; position: relative;
+    }
     .avatar-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+    .player-tag {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: rgba(0, 0, 0, 0.75); color: #fff; font-size: 9px;
+      text-align: center; white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; padding: 1px 2px; font-weight: bold;
+    }
+
     .placeholder-icon {
-      width: 28px; height: 28px; border-radius: 50%; background: rgba(255, 255, 255, 0.85);
-      display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 13px; color: #222;
+      width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, 0.85);
+      display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 12px; color: #222;
     }
 
     /* Plus Button */
     .plus-btn-container { margin-bottom: 10px; }
     .plus-btn {
-      width: 60px; height: 60px; border-radius: 50%; background-color: #0d2bb5;
-      border: 3px solid #66bb6a; color: #ffffff; font-size: 36px;
+      width: 62px; height: 62px; border-radius: 50%; background-color: #0d2bb5;
+      border: 3px solid #66bb6a; color: #ffffff; font-size: 38px;
       display: flex; justify-content: center; align-items: center; cursor: pointer;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
 
-    /* Modal */
+    /* Modal Sheet */
     .modal-overlay {
       display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background-color: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: flex-end;
@@ -124,24 +139,25 @@
       width: 100%; max-width: 480px; background: #fff; border-top-left-radius: 20px;
       border-top-right-radius: 20px; padding: 20px; max-height: 85vh; overflow-y: auto;
     }
-    .modal-header {
-      display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
-      border-bottom: 1px solid #eee; padding-bottom: 10px; font-weight: bold;
-    }
 
-    .players-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
-    .player-uploader {
-      display: flex; align-items: center; gap: 8px; background: #f8f9fa; padding: 8px; border-radius: 8px; border: 1px solid #e0e0e0;
+    .players-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+    .player-item-box {
+      display: flex; align-items: center; gap: 8px; background: #f8f9fa;
+      padding: 8px; border-radius: 8px; border: 1px solid #e0e0e0;
     }
-    .player-thumb { width: 36px; height: 36px; border-radius: 50%; background: #ccc; object-fit: cover; }
+    .player-thumb { width: 38px; height: 38px; border-radius: 50%; background: #ccc; object-fit: cover; flex-shrink: 0; }
+    .id-input {
+      flex-grow: 1; padding: 6px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;
+    }
     .upload-btn-label {
-      font-size: 12px; background: #0d2bb5; color: white; padding: 5px 8px; border-radius: 5px; cursor: pointer; text-align: center; flex-grow: 1;
+      font-size: 11px; background: #0d2bb5; color: white; padding: 7px 10px;
+      border-radius: 6px; cursor: pointer; text-align: center; font-weight: bold;
     }
 
-    .action-btn {
-      width: 100%; padding: 12px; margin-top: 8px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;
+    .reset-btn {
+      width: 100%; padding: 12px; background: #dc3545; color: white;
+      border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
     }
-    .reset-btn { background: #dc3545; color: white; }
 
     input[type="file"] { display: none; }
   </style>
@@ -150,11 +166,12 @@
 
   <!-- Winner Banner -->
   <div id="winner-banner">
-    <div class="crown">👑 البطل 👑</div>
+    <div>👑 فائز المسابقة 👑</div>
     <img id="winner-img" class="winner-avatar" src="" alt="Winner">
+    <div id="winner-id" class="winner-id"></div>
   </div>
 
-  <!-- Tournament Tree -->
+  <!-- Tournament Tree Structure -->
   <div class="bracket-container">
     <div class="side">
       <div class="pair">
@@ -194,102 +211,81 @@
     </div>
   </div>
 
-  <!-- Plus Button -->
+  <!-- Plus Button at Bottom -->
   <div class="plus-btn-container">
     <div class="plus-btn" onclick="openModal()">+</div>
   </div>
 
-  <!-- Modal -->
+  <!-- Control Modal Sheet -->
   <div class="modal-overlay" id="modal">
     <div class="modal-content">
-      <div class="modal-header">
-        <span>تغيير صور اللاعبين والتحكم</span>
+      <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-weight:bold;">
+        <span>تسجيل المتابعين في المسابقة</span>
         <button style="background:none;border:none;font-size:20px;" onclick="closeModal()">&times;</button>
       </div>
 
       <div class="players-list" id="upload-grid"></div>
-      <button class="action-btn reset-btn" onclick="resetTournament()">إعادة ضبط البطولة بمسح كل الصور</button>
+      <button class="reset-btn" onclick="resetTournament()">تصفير البطولة لبطولة جديدة</button>
     </div>
   </div>
 
   <script>
-    const LOCAL_STORAGE_KEY = "tournament_permanent_state";
-    const broadcastUrl = "https://ntfy.sh/fox-tournament-channel-v2";
+    // Live Cloud Database Integration
+    const firebaseConfig = { databaseURL: "https://fox-live-bracket-default-rtdb.firebaseio.com/" };
+    firebase.initializeApp(firebaseConfig);
+    const dbRef = firebase.database().ref("tiktok_live_stream_tournament");
 
     let state = {
-      players: Array(8).fill(null),
+      players: Array(8).fill(null), // { img: '', tag: '' }
       semis: Array(4).fill(null),
       finals: Array(2).fill(null),
       winner: null
     };
 
-    // Load Permanent Data from Local Storage first upon refresh
-    function loadSavedState() {
-      const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (savedData) {
-        try {
-          state = JSON.parse(savedData);
-        } catch(e) {}
+    // Auto Listener for Live Stream Sync
+    dbRef.on("value", (snapshot) => {
+      const data = snapshot.val();
+      if (data) state = data;
+      render();
+    });
+
+    function save() { dbRef.set(state); }
+
+    function renderSlot(elId, item) {
+      const el = document.getElementById(elId);
+      if (item && item.img) {
+        el.innerHTML = `<img src="${item.img}"><div class="player-tag">${item.tag || ''}</div>`;
+      } else {
+        el.innerHTML = `<div class="placeholder-icon">${elId.replace(/\D/g, '') * 1 + 1}</div>`;
       }
     }
-
-    // Save Data Permanently to Device Memory
-    function saveStatePermanently() {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
-      render();
-      
-      // Broadcast to live stream
-      fetch(broadcastUrl, {
-        method: "POST",
-        body: JSON.stringify(state)
-      }).catch(e => console.error(e));
-    }
-
-    // Listen to Sync
-    const eventSource = new EventSource(broadcastUrl + "/sse");
-    eventSource.onmessage = (event) => {
-      try {
-        const receivedState = JSON.parse(event.data);
-        if (receivedState && receivedState.players) {
-          state = receivedState;
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
-          render();
-        }
-      } catch(e) {}
-    };
 
     function render() {
-      for (let i = 0; i < 8; i++) {
-        const el = document.getElementById(`slot-${i}`);
-        el.innerHTML = state.players[i] ? `<img src="${state.players[i]}">` : `<div class="placeholder-icon">${i + 1}</div>`;
-      }
-      for (let i = 0; i < 4; i++) {
-        const el = document.getElementById(`semi-${i}`);
-        el.innerHTML = state.semis[i] ? `<img src="${state.semis[i]}">` : '';
-      }
-      for (let i = 0; i < 2; i++) {
-        const el = document.getElementById(`final-${i}`);
-        el.innerHTML = state.finals[i] ? `<img src="${state.finals[i]}">` : '';
-      }
+      for (let i = 0; i < 8; i++) renderSlot(`slot-${i}`, state.players ? state.players[i] : null);
+      for (let i = 0; i < 4; i++) renderSlot(`semi-${i}`, state.semis ? state.semis[i] : null);
+      for (let i = 0; i < 2; i++) renderSlot(`final-${i}`, state.finals ? state.finals[i] : null);
 
       const banner = document.getElementById('winner-banner');
-      const winnerImg = document.getElementById('winner-img');
-      if (state.winner) {
+      if (state.winner && state.winner.img) {
         banner.style.display = 'block';
-        winnerImg.src = state.winner;
+        document.getElementById('winner-img').src = state.winner.img;
+        document.getElementById('winner-id').innerText = state.winner.tag ? `ID: ${state.winner.tag}` : '';
       } else {
         banner.style.display = 'none';
       }
 
+      // Modal Controls Render
       const grid = document.getElementById('upload-grid');
       grid.innerHTML = '';
       for (let i = 0; i < 8; i++) {
-        const thumb = state.players[i] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="%23ccc"><circle cx="12" cy="12" r="10"/></svg>';
+        const p = (state.players && state.players[i]) || { img: '', tag: '' };
+        const thumb = p.img || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 24 24" fill="%23ccc"><circle cx="12" cy="12" r="10"/></svg>';
         grid.innerHTML += `
-          <div class="player-uploader">
+          <div class="player-item-box">
             <img class="player-thumb" src="${thumb}">
+            <input type="text" class="id-input" placeholder="اسم / ID المتابع ${i+1}" value="${p.tag || ''}" onchange="updateTag(${i}, this.value)">
             <label class="upload-btn-label">
-              لاعب ${i + 1}
+              رفع صورة
               <input type="file" accept="image/*" onchange="uploadImage(${i}, event)">
             </label>
           </div>
@@ -297,26 +293,18 @@
       }
     }
 
-    function advance(pIdx, sIdx) {
-      if (!state.players[pIdx]) return;
-      state.semis[sIdx] = state.players[pIdx];
-      saveStatePermanently();
+    function advance(p, s) { if(state.players && state.players[p]) { if(!state.semis) state.semis = Array(4).fill(null); state.semis[s] = state.players[p]; save(); } }
+    function advanceSemi(s, f) { if(state.semis && state.semis[s]) { if(!state.finals) state.finals = Array(2).fill(null); state.finals[f] = state.semis[s]; save(); } }
+    function setWinner(f) { if(state.finals && state.finals[f]) { state.winner = state.finals[f]; save(); if(typeof confetti === 'function') confetti({particleCount:90}); } }
+
+    function updateTag(idx, val) {
+      if(!state.players) state.players = Array(8).fill(null);
+      if(!state.players[idx]) state.players[idx] = { img: '', tag: '' };
+      state.players[idx].tag = val;
+      save();
     }
 
-    function advanceSemi(sIdx, fIdx) {
-      if (!state.semis[sIdx]) return;
-      state.finals[fIdx] = state.semis[sIdx];
-      saveStatePermanently();
-    }
-
-    function setWinner(fIdx) {
-      if (!state.finals[fIdx]) return;
-      state.winner = state.finals[fIdx];
-      saveStatePermanently();
-      if (typeof confetti === 'function') confetti({ particleCount: 80, spread: 70, origin: { y: 0.2 } });
-    }
-
-    function uploadImage(index, event) {
+    function uploadImage(idx, event) {
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
@@ -325,12 +313,13 @@
         img.src = e.target.result;
         img.onload = function() {
           const canvas = document.createElement('canvas');
+          canvas.width = 70; canvas.height = 70;
           const ctx = canvas.getContext('2d');
-          canvas.width = 70;
-          canvas.height = 70;
           ctx.drawImage(img, 0, 0, 70, 70);
-          state.players[index] = canvas.toDataURL('image/jpeg', 0.4);
-          saveStatePermanently();
+          if(!state.players) state.players = Array(8).fill(null);
+          const currentTag = state.players[idx] ? state.players[idx].tag : '';
+          state.players[idx] = { img: canvas.toDataURL('image/jpeg', 0.5), tag: currentTag };
+          save();
         };
       };
       reader.readAsDataURL(file);
@@ -338,17 +327,11 @@
 
     function resetTournament() {
       state = { players: Array(8).fill(null), semis: Array(4).fill(null), finals: Array(2).fill(null), winner: null };
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
-      saveStatePermanently();
-      closeModal();
+      save(); closeModal();
     }
 
     function openModal() { document.getElementById('modal').style.display = 'flex'; }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
-
-    // Init Page Load
-    loadSavedState();
-    render();
   </script>
 </body>
 </html>
